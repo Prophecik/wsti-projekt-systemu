@@ -5,11 +5,67 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model Users {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(32)
+  surname   String   @db.VarChar(32)
+  email     String   @unique @db.VarChar(64)
+  password  String   @db.VarChar(255)
+  createdAt DateTime @default(now())
+
+  tickets Tickets[]
+  actions ActionHistory[]
+}
+
+model Tickets {
+  id            Int      @id @default(autoincrement())
+  subject       String   @db.VarChar(255)
+  customerEmail String   @db.VarChar(255)
+  status        Int
+  assignedTo    Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  assignedUser Users?          @relation(fields: [assignedTo], references: [id])
+  messages     Messages[]
+  actions      ActionHistory[]
+}
+
+model Messages {
+  id        Int      @id @default(autoincrement())
+  sender    String   @db.VarChar(255)
+  ticketId  Int
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  ticket      Tickets      @relation(fields: [ticketId], references: [id])
+  attachments Attachment[]
+}
+
+model Attachment {
+  id        Int    @id @default(autoincrement())
+  messageId Int
+  fileName  String @db.VarChar(255)
+  filePath  String @db.VarChar(500)
+
+  message Messages @relation(fields: [messageId], references: [id])
+}
+
+model ActionHistory {
+  id         Int      @id @default(autoincrement())
+  actionType String   @db.VarChar(100)
+  ticketId   Int
+  doneBy     Int?
+  createdAt  DateTime @default(now())
+
+  ticket Tickets @relation(fields: [ticketId], references: [id])
+  user   Users?  @relation(fields: [doneBy], references: [id])
 }
